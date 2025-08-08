@@ -4,6 +4,7 @@ using NaughtyAttributes;
 using rayzngames;
 using UnityEngine;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public class BicycleInputReader : NetworkBehaviour
 {
@@ -22,20 +23,23 @@ public class BicycleInputReader : NetworkBehaviour
             return;
         }
 
-        CustomSceneManager.Instance.OnSceneLoaded += OnSceneLoaded;
+        SceneManager.activeSceneChanged += OnSceneLoaded;
         base.OnNetworkSpawn();
     }
 
     public override void OnNetworkDespawn()
     {
         Debug.Log("BicycleInputReader disabled.");
+        SceneManager.activeSceneChanged -= OnSceneLoaded;
         base.OnNetworkDespawn();
     }
 
-    private void OnSceneLoaded(string sceneName)
+    private void OnSceneLoaded(Scene unloadedScene, Scene loadedScene)
     {
-        if (sceneName != SceneKeys.GameScene)
+        Debug.Log($"Scene changed from {unloadedScene.name} to {loadedScene.name}");
+        if (loadedScene.name != SceneKeys.GameScene)
         {
+            Debug.Log("BicycleInputReader is not enabled because the scene is not the game scene.");
             _shouldListenToInput = false;
             return;
         }
@@ -66,7 +70,6 @@ public class BicycleInputReader : NetworkBehaviour
         if (!IsOwner || !_shouldListenToInput || !_bicycleVehicle) return;
 
         float horizontal = 0f;
-        float vertical = 0f;
         bool braking = false;
 
         switch (_myRole)
@@ -75,22 +78,24 @@ public class BicycleInputReader : NetworkBehaviour
                 horizontal = Input.GetAxis("Horizontal");
                 if (horizontal != 0f)
                     _bicycleVehicle.SetHorizontalInputRpc(horizontal);
+                
+                if (Input.GetKey(KeyCode.Space))
+                    _bicycleVehicle.PedalInstantRpc();
 
                 //TODO BURASI KALKICAK
 
-                vertical = Input.GetAxis("Vertical");
-                if (vertical != 0f)
-                    _bicycleVehicle.SetVerticalInputRpc(vertical);
+                // vertical = Input.GetAxis("Vertical");
+                // if (vertical != 0f)
+                //     _bicycleVehicle.SetVerticalInputRpc(vertical);
                 break;
             case PlayerRole.Pedal:
-                vertical = Input.GetAxis("Vertical");
+                //vertical = Input.GetAxis("Vertical");
                 braking = Input.GetKey(KeyCode.Space);
-                if (vertical != 0f)
-                    _bicycleVehicle.SetVerticalInputRpc(vertical);
+                // if (vertical != 0f)
+                //     _bicycleVehicle.SetVerticalInputRpc(vertical);
                 _bicycleVehicle.SetBrakingRpc(braking);
-
-                //TODO BURASI KALKICAK
-
+                if (Input.GetKey(KeyCode.Space))
+                    _bicycleVehicle.PedalInstantRpc();
 
                 horizontal = Input.GetAxis("Horizontal");
                 if (horizontal != 0f)

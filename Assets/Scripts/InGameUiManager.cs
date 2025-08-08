@@ -1,6 +1,7 @@
 ﻿using System;
 using rayzngames;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,8 +18,10 @@ namespace DefaultNamespace
         [SerializeField] TMP_InputField MotorTorkInputField;
         [SerializeField] Button SetMotorTorkButton;
 
-        protected override void Awake()
+        private void Start()
         {
+            if(!NetworkManager.Singleton.IsServer)
+                return;
             InputReader.Instance.OnEscapeButtonPressed += ToggleEscapeUi;
             SetMotorTorkButton.onClick.AddListener(SetMotorTork);
         }
@@ -38,7 +41,7 @@ namespace DefaultNamespace
 
         private void Update()
         {
-            SpeedText.text = speedPrefix + bicycle.currentSpeed;
+            SpeedText.text = speedPrefix + bicycle.currentSpeed.ToString("F1") ;
         }
     }
 }

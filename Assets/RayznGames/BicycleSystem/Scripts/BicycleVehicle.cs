@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEditor;
 using System.Drawing;
+using DG.Tweening;
+using NaughtyAttributes;
 using Unity.Netcode;
 
 namespace rayzngames
@@ -9,7 +11,8 @@ namespace rayzngames
     {
         //debugInfo	
         public NetworkVariable<float> _horizontalInput = new NetworkVariable<float>(0f);
-        NetworkVariable<float> _verticalInput = new NetworkVariable<float>(0f);
+
+        //NetworkVariable<float> _verticalInput = new NetworkVariable<float>(0f);
         NetworkVariable<bool> _braking = new NetworkVariable<bool>(false);
 
         [SerializeField] Rigidbody rb;
@@ -58,6 +61,8 @@ namespace rayzngames
         [Space(20)] [Header("Object References")]
         public Transform handle;
 
+        public Transform pedalPivot;
+
         [Space(10)] [SerializeField] WheelCollider frontWheel;
         [SerializeField] WheelCollider backWheel;
         [Space(10)] [SerializeField] Transform frontWheelTransform;
@@ -80,6 +85,8 @@ namespace rayzngames
         [Space(20)] [HeaderAttribute("Speed M/s")] [SerializeField]
         public float currentSpeed;
 
+        private float pedalIntervalTimer;
+        private Tweener pedalTween;
 
         // Start is called before the first frame update
         void Start()
@@ -119,35 +126,107 @@ namespace rayzngames
             _horizontalInput.Value = horizontalInput;
         }
 
-        [Rpc(SendTo.Server)]
-        public void SetVerticalInputRpc(float verticalInput)
-        {
-            _verticalInput.Value = verticalInput;
-        }
+        // [Rpc(SendTo.Server)]
+        // public void SetVerticalInputRpc(float verticalInput)
+        // {
+        //     _verticalInput.Value = verticalInput;
+        // }
 
         [Rpc(SendTo.Server)]
         public void SetBrakingRpc(bool braking)
         {
             //TODO: Brekaing icin  
-           // _braking.Value = braking;
+            // _braking.Value = braking;
+        }
+
+        [Rpc(SendTo.Server)]
+        public void PedalInstantRpc()
+        {
+            SetMotorTorque();
+        }
+
+        private void SetMotorTorque()
+        {
+            if (pedalIntervalTimer > 0)
+                return;
+
+            Debug.Log("Motor Force set ediddi");
+            backWheel.motorTorque = motorForceInstant;
+            pedalIntervalTimer = pedalInterval; //Reset the interval
+            // Mevcut tween varsa durdur
+            if (pedalTween != null && pedalTween.IsActive())
+                pedalTween.Kill();
+
+            // Yeni tween başlat
+            pedalTween = pedalPivot
+                .DOLocalRotate(GetPedalRotationBySpeed(), pedalInterval + .1f, RotateMode.LocalAxisAdd)
+                .SetEase(Ease.Linear);
+        }
+
+        public RotateMode RotateMode;
+
+        [Button]
+        public void rotate90Degrees()
+        {
+            if (pedalTween != null && pedalTween.IsActive())
+                pedalTween.Kill();
+
+            // Yeni tween başlat
+            pedalTween = pedalPivot.DOLocalRotate(new Vector3(-90, 0, 0), pedalInterval + .1f, RotateMode)
+                .SetEase(Ease.Linear);
+        }
+
+        [Button]
+        public void rotate180Degrees()
+        {
+            if (pedalTween != null && pedalTween.IsActive())
+                pedalTween.Kill();
+
+            // Yeni tween başlat
+            pedalTween = pedalPivot.DOLocalRotate(new Vector3(-180, 0, 0), pedalInterval + .1f, RotateMode)
+                .SetEase(Ease.Linear);
+        }
+
+        [Button]
+        public void Rotate360Degrees()
+        {
+            if (pedalTween != null && pedalTween.IsActive())
+                pedalTween.Kill();
+
+            // Yeni tween başlat
+            pedalTween = pedalPivot.DOLocalRotate(new Vector3(360, 0, 0), pedalInterval + .1f, RotateMode)
+                .SetEase(Ease.Linear);
+        }
+
+
+        private Vector3 GetPedalRotationBySpeed()
+        {
+            switch (currentSpeed)
+            {
+                case < 5:
+                    return new Vector3(-90, 0, 0);
+                case < 10:
+                    return new Vector3(-180, 0, 0);
+                case < 15:
+                    return new Vector3(-360, 0, 0);
+                case < 20:
+                    return new Vector3(-540, 0, 0);
+                default:
+                    return new Vector3(-720, 0, 0);
+            }
         }
 
         private void HandleEngineNew()
         {
-            if (Input.GetKeyDown(KeyCode.Space) && pedalInterval <= 0)
-            {
-                Debug.Log("Motor Force set ediddi");
-                backWheel.motorTorque = motorForceInstant;
-                pedalInterval = 0.5f; //Reset the interval
-            }
-            else if (pedalInterval <= 0 && backWheel.motorTorque > 0)
+            if (pedalIntervalTimer <= 0 && backWheel.motorTorque > 0)
             {
                 backWheel.motorTorque = 0f;
             }
-            else if (pedalInterval > 0)
+            else if (pedalIntervalTimer > 0)
             {
-                pedalInterval -= Time.fixedDeltaTime;
+                pedalIntervalTimer -= Time.fixedDeltaTime;
             }
+
             Debug.Log("Motor Force: " + backWheel.motorTorque);
         }
 
@@ -274,43 +353,10 @@ namespace rayzngames
         {
             currentSpeed = rb.linearVelocity.magnitude;
         }
+
         public void SetInstantMotorForce(float force)
         {
             motorForceInstant = force;
         }
     }
-
-    #region CustomInspector
-
-    [CustomEditor(typeof(BicycleVehicle))]
-    //We need to extend the Editor
-    public class BicycleInspector : Editor
-    {
-        //Here we grab a reference to our component
-        BicycleVehicle bicycle;
-
-        private void OnEnable()
-        {
-            //target is by default available for you in Editor		
-            bicycle = target as BicycleVehicle;
-        }
-
-        //Here is the meat of the script
-        public override void OnInspectorGUI()
-        {
-            SetLabel("Bicycle System", 30, FontStyle.Bold, TextAnchor.UpperLeft);
-            SetLabel("Love from RayznGames", 12, FontStyle.Italic, TextAnchor.UpperRight);
-            base.OnInspectorGUI();
-        }
-
-        void SetLabel(string title, int size, FontStyle style, TextAnchor alignment)
-        {
-            GUI.skin.label.alignment = alignment;
-            GUI.skin.label.fontSize = size;
-            GUI.skin.label.fontStyle = FontStyle.Bold;
-            GUILayout.Label(title);
-        }
-    }
-
-    #endregion
 }
