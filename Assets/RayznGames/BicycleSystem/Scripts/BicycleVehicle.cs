@@ -8,13 +8,20 @@ namespace rayzngames
     public class BicycleVehicle : NetworkBehaviour
     {
         //debugInfo	
-        float _horizontalInput;
-        float _verticalInput;
-        bool _braking;
-        Rigidbody rb;
+        public NetworkVariable<float> _horizontalInput = new NetworkVariable<float>(0f);
+        NetworkVariable<float> _verticalInput = new NetworkVariable<float>(0f);
+        NetworkVariable<bool> _braking = new NetworkVariable<bool>(false);
+
+        [SerializeField] Rigidbody rb;
 
         [Header("Power/Braking")] [Space(5)] [SerializeField]
         float motorForce;
+
+        [Header("Power/Braking")] [Space(5)] [SerializeField]
+        private float motorForceInstant = 70f;
+
+        [Header("Power/Braking")] [Space(5)] [SerializeField]
+        private float pedalInterval = .4f;
 
         [SerializeField] float brakeForce;
         public Vector3 COG;
@@ -71,10 +78,8 @@ namespace rayzngames
         public float currentLeanAngle;
 
         [Space(20)] [HeaderAttribute("Speed M/s")] [SerializeField]
-        float currentSpeed;
+        public float currentSpeed;
 
-        private NetworkVariable<bool> _shouldEmit = new NetworkVariable<bool>(false,
-            NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         // Start is called before the first frame update
         void Start()
@@ -87,22 +92,23 @@ namespace rayzngames
             //Important to stop bike from Jittering
             frontWheel.ConfigureVehicleSubsteps(5, 12, 15);
             backWheel.ConfigureVehicleSubsteps(5, 12, 15);
-            rb = GetComponent<Rigidbody>();
         }
 
         // Update is called once per frame
         void FixedUpdate()
         {
             EmitTrail();
+            UpdateHandles();
+            UpdateWheels();
+            Speed_O_Meter();
+            HandleSteering();
+
             if (!IsServer)
                 return;
 
             HandleEngine();
-            HandleSteering();
+            HandleEngineNew();
             LeanOnTurn();
-            UpdateHandles();
-            UpdateWheels();
-            Speed_O_Meter();
             //DebugInfo();
         }
 
@@ -110,27 +116,50 @@ namespace rayzngames
         [Rpc(SendTo.Server)]
         public void SetHorizontalInputRpc(float horizontalInput)
         {
-            _horizontalInput = horizontalInput;
+            _horizontalInput.Value = horizontalInput;
         }
 
         [Rpc(SendTo.Server)]
         public void SetVerticalInputRpc(float verticalInput)
         {
-            _verticalInput = verticalInput;
+            _verticalInput.Value = verticalInput;
         }
 
         [Rpc(SendTo.Server)]
         public void SetBrakingRpc(bool braking)
         {
-            _braking = braking;
-            _shouldEmit.Value = braking;
+            //TODO: Brekaing icin  
+           // _braking.Value = braking;
         }
+
+        private void HandleEngineNew()
+        {
+            if (Input.GetKeyDown(KeyCode.Space) && pedalInterval <= 0)
+            {
+                Debug.Log("Motor Force set ediddi");
+                backWheel.motorTorque = motorForceInstant;
+                pedalInterval = 0.5f; //Reset the interval
+            }
+            else if (pedalInterval <= 0 && backWheel.motorTorque > 0)
+            {
+                backWheel.motorTorque = 0f;
+            }
+            else if (pedalInterval > 0)
+            {
+                pedalInterval -= Time.fixedDeltaTime;
+            }
+            Debug.Log("Motor Force: " + backWheel.motorTorque);
+        }
+
 
         private void HandleEngine()
         {
-            backWheel.motorTorque = _braking ? 0f : _verticalInput * motorForce;
+            //TODO: Bunu geri kaldır eski sisteme dönmek için
+            //backWheel.motorTorque = _braking.Value ? 0f : _verticalInput.Value * motorForce;
+
+
             //If we are braking, ApplyBreaking applies brakeForce conditional is embeded in parameter	
-            float force = _braking ? brakeForce : 0f;
+            float force = _braking.Value ? brakeForce : 0f;
             ApplyBraking(force);
         }
 
@@ -158,13 +187,13 @@ namespace rayzngames
         {
             MaxSteeringReductor();
 
-            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * _horizontalInput,
+            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * _horizontalInput.Value,
                 turnSmoothing * 0.1f);
             frontWheel.steerAngle = currentSteeringAngle;
 
             //We set the target lean angle to the + or - input value of our steering 
             //We invert our input for rotating in the ocrrect axis
-            targetLeanAngle = maxLeanAngle * -_horizontalInput;
+            targetLeanAngle = maxLeanAngle * -_horizontalInput.Value;
         }
 
         public void UpdateHandles()
@@ -208,7 +237,7 @@ namespace rayzngames
 
         private void EmitTrail()
         {
-            if (_shouldEmit.Value == true)
+            if (_braking.Value)
             {
                 frontTrail.emitting = frontContact.GetCOntact();
                 rearTrail.emitting = rearContact.GetCOntact();
@@ -244,6 +273,10 @@ namespace rayzngames
         void Speed_O_Meter()
         {
             currentSpeed = rb.linearVelocity.magnitude;
+        }
+        public void SetInstantMotorForce(float force)
+        {
+            motorForceInstant = force;
         }
     }
 

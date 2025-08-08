@@ -21,7 +21,8 @@ public class BicycleInputReader : NetworkBehaviour
             enabled = false;
             return;
         }
-        SceneManager.Instance.OnSceneLoaded += OnSceneLoaded;
+
+        CustomSceneManager.Instance.OnSceneLoaded += OnSceneLoaded;
         base.OnNetworkSpawn();
     }
 
@@ -33,35 +34,35 @@ public class BicycleInputReader : NetworkBehaviour
 
     private void OnSceneLoaded(string sceneName)
     {
-        if(sceneName != SceneKeys.GameScene)
+        if (sceneName != SceneKeys.GameScene)
         {
             _shouldListenToInput = false;
             return;
         }
+
         _bicycleVehicle = FindFirstObjectByType<BicycleVehicle>();
         Debug.Log("BicycleInputReader is enabled and listening to input.");
-        
+
         _myRole = GetMyRoleFromSession();
         Debug.Log($"My role is: {_myRole}");
-        
+
         _shouldListenToInput = true;
     }
 
     [Button]
     public void DebugSTuff()
     {
-        if(!_shouldListenToInput)
+        if (!_shouldListenToInput)
             Debug.Log("BicycleInputReader is not listening to input because the scene is not the game scene.");
         if (!_bicycleVehicle)
-            Debug.Log("BicycleVehicle is not found in the scene. Make sure it is present before enabling input reading.");
-        if(!IsOwner)
+            Debug.Log(
+                "BicycleVehicle is not found in the scene. Make sure it is present before enabling input reading.");
+        if (!IsOwner)
             Debug.Log("BicycleInputReader is not the owner. Input reading is disabled for this instance.");
-        
     }
 
     private void Update()
     {
-        
         if (!IsOwner || !_shouldListenToInput || !_bicycleVehicle) return;
 
         float horizontal = 0f;
@@ -72,13 +73,28 @@ public class BicycleInputReader : NetworkBehaviour
         {
             case PlayerRole.Steer:
                 horizontal = Input.GetAxis("Horizontal");
-                _bicycleVehicle.SetHorizontalInputRpc(horizontal);
+                if (horizontal != 0f)
+                    _bicycleVehicle.SetHorizontalInputRpc(horizontal);
+
+                //TODO BURASI KALKICAK
+
+                vertical = Input.GetAxis("Vertical");
+                if (vertical != 0f)
+                    _bicycleVehicle.SetVerticalInputRpc(vertical);
                 break;
             case PlayerRole.Pedal:
                 vertical = Input.GetAxis("Vertical");
                 braking = Input.GetKey(KeyCode.Space);
-                _bicycleVehicle.SetVerticalInputRpc(vertical);
+                if (vertical != 0f)
+                    _bicycleVehicle.SetVerticalInputRpc(vertical);
                 _bicycleVehicle.SetBrakingRpc(braking);
+
+                //TODO BURASI KALKICAK
+
+
+                horizontal = Input.GetAxis("Horizontal");
+                if (horizontal != 0f)
+                    _bicycleVehicle.SetHorizontalInputRpc(horizontal);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
@@ -94,6 +110,7 @@ public class BicycleInputReader : NetworkBehaviour
             if (System.Enum.TryParse(prop.Value.ToString(), out PlayerRole parsedRole))
                 return parsedRole;
         }
+
         Debug.LogError("Player role not found in session properties.");
         return PlayerRole.Pedal; // varsayılan
     }

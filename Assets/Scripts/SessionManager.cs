@@ -18,6 +18,7 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
     private ISession _activeSession;
     public bool ServicesInitialized => UnityServices.State == ServicesInitializationState.Initialized;
     public event Action<ISession> OnSessionChanged;
+
     public PlayerRole MyRole
     {
         get
@@ -43,19 +44,21 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         {
             if (_activeSession == value)
                 return; // aynı session ise hiçbir şey yapma
-            Debug.Log( $"Active session changed from {_activeSession?.Id} to {value?.Id}");
+            Debug.Log($"Active session changed from {_activeSession?.Id} to {value?.Id}");
             if (_activeSession != null)
             {
                 UnregisterSessionEvents();
                 _activeSession = null; // Clear before assigning new value
             }
+
             // Then assign and subscribe to new session
             _activeSession = value;
-        
+
             if (_activeSession != null)
             {
                 RegisterSessionEvents();
             }
+
             OnSessionChanged.Invoke(value);
         }
     }
@@ -119,7 +122,6 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         };
     }
 
-    [Button]
     public async void JoinSessionById(string sessionId)
     {
         try
@@ -133,7 +135,6 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         }
     }
 
-    [Button]
     public async void JoinSessionByCode(string joinCode)
     {
         try
@@ -145,26 +146,6 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         {
             Console.WriteLine(e);
             throw;
-        }
-    }
-
-    [Button]
-    public async void KickPlayer(string playerId)
-    {
-        if (ActiveSession == null || !ActiveSession.IsHost)
-        {
-            Debug.LogError("You must be the host to kick a player.");
-            return;
-        }
-
-        try
-        {
-            await ActiveSession.AsHost().RemovePlayerAsync(playerId);
-            Debug.Log($"Player {playerId} has been kicked from the session.");
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Failed to kick player: {e.Message}");
         }
     }
 
@@ -192,17 +173,19 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
             Debug.Log("Left the session successfully.");
         }
     }
+
     [Button]
     public void SetPlayerRoleToSteer()
     {
         SetPlayerRole(PlayerRole.Steer);
     }
+
     [Button]
     public void SetPlayerRoleToPedal()
     {
         SetPlayerRole(PlayerRole.Pedal);
     }
-    
+
     public async void SetPlayerRole(PlayerRole newRole)
     {
         if (ActiveSession == null || ActiveSession.CurrentPlayer == null)
@@ -224,28 +207,11 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
     }
 
     [Button]
-    public async Task<IList<ISessionInfo>> QuerySessions()
-    {
-        try
-        {
-            var sessionQueryOptions = new QuerySessionsOptions();
-            var result = await MultiplayerService.Instance.QuerySessionsAsync(sessionQueryOptions);
-            Debug.Log($"Found {result.Sessions.Count} sessions.");
-            return result.Sessions;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Failed to query sessions: {e.Message}");
-            return new List<ISessionInfo>();
-        }
-    }
-
-    [Button]
     public void StartGame()
     {
-        if(!CanStartTheGame())
+        if (!CanStartTheGame())
             return;
-        SceneManager.Instance.LoadNetworkScene(SceneKeys.GameScene);
+        CustomSceneManager.Instance.LoadNetworkScene(SceneKeys.GameScene);
     }
 
     private bool CanStartTheGame()
@@ -262,24 +228,24 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
             return false;
         }
 
-        if (ActiveSession.Players.Count != 2)
-        {
-            Debug.LogWarning("Not enough players to start the game. At least 2 players are required.");
-            return false;
-        }
-        bool hasSteer = ActiveSession.Players.Any(p =>
-            p.Properties.TryGetValue(MultiplayerKeys.PlayerRole, out var roleProp) &&
-            roleProp.Value == PlayerRole.Steer.ToString());
-
-        bool hasPedal = ActiveSession.Players.Any(p =>
-            p.Properties.TryGetValue(MultiplayerKeys.PlayerRole, out var roleProp) &&
-            roleProp.Value == PlayerRole.Pedal.ToString());
-
-        if (!hasSteer || !hasPedal)
-        {
-            Debug.LogWarning("Both Steer and Pedal roles are required to start the game.");
-            return false;
-        }
+        // if (ActiveSession.Players.Count != 2)
+        // {
+        //     Debug.LogWarning("Not enough players to start the game. At least 2 players are required.");
+        //     return false;
+        // }
+        // bool hasSteer = ActiveSession.Players.Any(p =>
+        //     p.Properties.TryGetValue(MultiplayerKeys.PlayerRole, out var roleProp) &&
+        //     roleProp.Value == PlayerRole.Steer.ToString());
+        //
+        // bool hasPedal = ActiveSession.Players.Any(p =>
+        //     p.Properties.TryGetValue(MultiplayerKeys.PlayerRole, out var roleProp) &&
+        //     roleProp.Value == PlayerRole.Pedal.ToString());
+        //
+        // if (!hasSteer || !hasPedal)
+        // {
+        //     Debug.LogWarning("Both Steer and Pedal roles are required to start the game.");
+        //     return false;
+        // }
 
         return true;
     }

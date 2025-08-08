@@ -4,7 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class SceneManager : SingletonMonoBehaviour<SceneManager>
+public class CustomSceneManager : SingletonMonoBehaviour<CustomSceneManager>
 {
     public event Action<string> OnSceneLoadStarted;
     public event Action<string> OnSceneLoaded;
