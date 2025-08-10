@@ -90,11 +90,11 @@ public class BicycleInputReader : NetworkBehaviour
                 break;
             case PlayerRole.Pedal:
                 //vertical = Input.GetAxis("Vertical");
-                braking = Input.GetKey(KeyCode.Space);
+                //braking = Input.GetKey(KeyCode.Space);
                 // if (vertical != 0f)
                 //     _bicycleVehicle.SetVerticalInputRpc(vertical);
-                _bicycleVehicle.SetBrakingRpc(braking);
-                if (Input.GetKey(KeyCode.Space))
+                //_bicycleVehicle.SetBrakingRpc(braking);
+                if (Input.GetKeyDown(KeyCode.Space))
                     _bicycleVehicle.PedalInstantRpc();
 
                 horizontal = Input.GetAxis("Horizontal");

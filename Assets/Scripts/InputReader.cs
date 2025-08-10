@@ -25,23 +25,21 @@ namespace DefaultNamespace
             {
                 OnEscapeButtonPressed?.Invoke();
             }
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                OnResetButtonPressed();
+            }
         }
-
-        [Button]
-        public void rotate90Degrees()
+        private void OnResetButtonPressed ()
         {
-                _bicycleVehicle.rotate90Degrees();
+            if (_bicycleVehicle != null)
+            {
+                _bicycleVehicle.ResetToLastCheckPoint();
+            }
+            else
+            {
+                Debug.LogError("BicycleVehicle is not assigned.");
+            }
         }
-        [Button]
-        public void rotate180Degrees()
-        {
-            _bicycleVehicle.rotate180Degrees();
-        }
-        [Button]
-        public void rotate360Degrees()
-        {
-            _bicycleVehicle.Rotate360Degrees();
-        }
-        
     }
 }

@@ -1,6 +1,9 @@
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEditor;
 using System.Drawing;
+using DefaultNamespace;
 using DG.Tweening;
 using NaughtyAttributes;
 using Unity.Netcode;
@@ -99,6 +102,17 @@ namespace rayzngames
             //Important to stop bike from Jittering
             frontWheel.ConfigureVehicleSubsteps(5, 12, 15);
             backWheel.ConfigureVehicleSubsteps(5, 12, 15);
+            
+            GameManager.Instance.OnPlayerFailed += ResetToLastCheckPoint;
+        }
+
+        private void OnDisable()
+        {
+            GameManager.Instance.OnPlayerFailed -= ResetToLastCheckPoint;
+            if (pedalTween != null && pedalTween.IsActive())
+            {
+                pedalTween.Kill();
+            }
         }
 
         // Update is called once per frame
@@ -162,43 +176,6 @@ namespace rayzngames
                 .DOLocalRotate(GetPedalRotationBySpeed(), pedalInterval + .1f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.Linear);
         }
-
-        public RotateMode RotateMode;
-
-        [Button]
-        public void rotate90Degrees()
-        {
-            if (pedalTween != null && pedalTween.IsActive())
-                pedalTween.Kill();
-
-            // Yeni tween başlat
-            pedalTween = pedalPivot.DOLocalRotate(new Vector3(-90, 0, 0), pedalInterval + .1f, RotateMode)
-                .SetEase(Ease.Linear);
-        }
-
-        [Button]
-        public void rotate180Degrees()
-        {
-            if (pedalTween != null && pedalTween.IsActive())
-                pedalTween.Kill();
-
-            // Yeni tween başlat
-            pedalTween = pedalPivot.DOLocalRotate(new Vector3(-180, 0, 0), pedalInterval + .1f, RotateMode)
-                .SetEase(Ease.Linear);
-        }
-
-        [Button]
-        public void Rotate360Degrees()
-        {
-            if (pedalTween != null && pedalTween.IsActive())
-                pedalTween.Kill();
-
-            // Yeni tween başlat
-            pedalTween = pedalPivot.DOLocalRotate(new Vector3(360, 0, 0), pedalInterval + .1f, RotateMode)
-                .SetEase(Ease.Linear);
-        }
-
-
         private Vector3 GetPedalRotationBySpeed()
         {
             switch (currentSpeed)
@@ -326,6 +303,22 @@ namespace rayzngames
                 frontTrail.emitting = false;
                 rearTrail.emitting = false;
             }
+        }
+
+        public void ResetToLastCheckPoint()
+        {
+            StartCoroutine(ResetToLastCheckPointCoroutine());
+        }
+
+        private IEnumerator ResetToLastCheckPointCoroutine()
+        {
+            //TODO BU RESET SURESI CircleWipeController'Dan gelmesi gerek ama simdilik hardcoded 
+            yield return new WaitForSeconds(0.4f);
+            var lastCheckPoint = CheckPointManager.Instance.LastCheckPointPosition;
+            transform.position = lastCheckPoint;
+            transform.rotation = Quaternion.identity; // Reset rotation to default
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
 
         void DebugInfo()

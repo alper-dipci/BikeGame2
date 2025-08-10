@@ -17,13 +17,17 @@ namespace DefaultNamespace
         [SerializeField] Transform EscapeUiContainer;
         [SerializeField] TMP_InputField MotorTorkInputField;
         [SerializeField] Button SetMotorTorkButton;
+        [SerializeField] Button ResetToLastCheckPointButton;
 
         private void Start()
         {
+            Cursor.lockState = CursorLockMode.Locked;
+            
             if(!NetworkManager.Singleton.IsServer)
                 return;
             InputReader.Instance.OnEscapeButtonPressed += ToggleEscapeUi;
             SetMotorTorkButton.onClick.AddListener(SetMotorTork);
+            ResetToLastCheckPointButton.onClick.AddListener(ResetToLastCheckPoint);
         }
 
         private void SetMotorTork()
@@ -37,11 +41,16 @@ namespace DefaultNamespace
         private void ToggleEscapeUi()
         {
             EscapeUiContainer.gameObject.SetActive(!EscapeUiContainer.gameObject.activeSelf);
+            Cursor.lockState = EscapeUiContainer.gameObject.activeSelf ? CursorLockMode.None : CursorLockMode.Locked;
         }
 
         private void Update()
         {
             SpeedText.text = speedPrefix + bicycle.currentSpeed.ToString("F1") ;
+        }
+        private void ResetToLastCheckPoint()
+        {
+            bicycle.ResetToLastCheckPoint();
         }
     }
 }
