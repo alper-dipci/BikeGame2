@@ -10,7 +10,7 @@ namespace DefaultNamespace
     public class InGameUiManager : SingletonMonoBehaviour<InGameUiManager>
     {
         protected override bool _isPermanent => false;
-        [SerializeField] private BicycleVehicle bicycle;
+        [SerializeField] private BicycleVehicleNew bicycle;
         [SerializeField] private string speedPrefix = "Speed = ";
         [SerializeField] TextMeshProUGUI SpeedText;
         

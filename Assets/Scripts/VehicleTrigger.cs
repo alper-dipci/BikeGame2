@@ -8,7 +8,7 @@ namespace DefaultNamespace
     {
         private void OnEnable()
         {
-            if (!NetworkManager.Singleton.IsServer)
+            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
             {
                 enabled = false;
             }
@@ -26,6 +26,8 @@ namespace DefaultNamespace
                     GameManager.Instance.DeadZoneTriggered();
                     Debug.Log("Dead zone triggered, resetting to last checkpoint.");
                     break;
+                case "JumpEffect":
+                    
                 default:
                     break;
             }

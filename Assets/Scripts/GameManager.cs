@@ -8,7 +8,7 @@ namespace DefaultNamespace
     public class GameManager : SingletonMonoBehaviour<GameManager>
     {
         protected override bool _isPermanent => false;
-        [SerializeField] private BicycleVehicle bicycle;
+        [SerializeField] private BicycleVehicleNew bicycle;
 
         public Action OnPlayerFailed; 
 

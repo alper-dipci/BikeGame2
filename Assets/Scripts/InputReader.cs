@@ -8,12 +8,12 @@ namespace DefaultNamespace
     public class InputReader : SingletonMonoBehaviour<InputReader>
     {
         public Action OnEscapeButtonPressed;
-        private BicycleVehicle _bicycleVehicle;
+        private BicycleVehicleNew _bicycleVehicleNew;
 
         private void Start()
         {
-            _bicycleVehicle = FindFirstObjectByType<BicycleVehicle>();
-            if (_bicycleVehicle == null)
+            _bicycleVehicleNew = FindFirstObjectByType<BicycleVehicleNew>();
+            if (_bicycleVehicleNew == null)
             {
                 Debug.LogError("BicycleVehicle not found in the scene.");
             }
@@ -32,9 +32,9 @@ namespace DefaultNamespace
         }
         private void OnResetButtonPressed ()
         {
-            if (_bicycleVehicle != null)
+            if (_bicycleVehicleNew != null)
             {
-                _bicycleVehicle.ResetToLastCheckPoint();
+                _bicycleVehicleNew.ResetToLastCheckPoint();
             }
             else
             {

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0aa66b4376845729c6fad0c05e037d8, type: 3}
+  m_Name: WheelDb
+  m_EditorClassIdentifier: 
+  DefaultFrictionProfile: {fileID: 11400000, guid: 5e6c924b819aec447854b97a37268f6a,
+    type: 2}
+  IceFrictionProfile: {fileID: 11400000, guid: 52c964586d31daa468e5f5b9aa085c56, type: 2}

@@ -10,7 +10,7 @@ using Unity.Netcode;
 
 namespace rayzngames
 {
-    public class BicycleVehicle : NetworkBehaviour
+    public class BicycleVehicleNew : NetworkBehaviour
     {
         //debugInfo	
         public NetworkVariable<float> _horizontalInput = new NetworkVariable<float>(0f);
@@ -91,18 +91,20 @@ namespace rayzngames
         private float pedalIntervalTimer;
         private Tweener pedalTween;
 
+        private float _horizontalInputSingle;
+
         // Start is called before the first frame update
         void Start()
         {
-            if (!IsServer)
+            if (NetworkManager.Singleton != null && !IsServer)
                 return;
-
+            
             frontContact = frontTrail.transform.GetChild(0).GetComponent<ContactProvider>();
             rearContact = rearTrail.transform.GetChild(0).GetComponent<ContactProvider>();
             //Important to stop bike from Jittering
             frontWheel.ConfigureVehicleSubsteps(5, 12, 15);
             backWheel.ConfigureVehicleSubsteps(5, 12, 15);
-            
+
             GameManager.Instance.OnPlayerFailed += ResetToLastCheckPoint;
         }
 
@@ -115,6 +117,21 @@ namespace rayzngames
             }
         }
 
+        private void Update()
+        {
+            if (NetworkManager.Singleton != null)
+                return;
+            ListenInputForTest();
+        }
+
+        private void ListenInputForTest()
+        {
+            Debug.Log("Input Check");
+            _horizontalInputSingle = Input.GetAxis("Horizontal");
+            if (Input.GetKey(KeyCode.Space))
+                SetMotorTorque();
+        }
+
         // Update is called once per frame
         void FixedUpdate()
         {
@@ -124,10 +141,10 @@ namespace rayzngames
             Speed_O_Meter();
             HandleSteering();
 
-            if (!IsServer)
+            if (NetworkManager.Singleton != null && !IsServer)
                 return;
 
-            HandleEngine();
+            //HandleBraking();
             HandleEngineNew();
             LeanOnTurn();
             //DebugInfo();
@@ -139,12 +156,6 @@ namespace rayzngames
         {
             _horizontalInput.Value = horizontalInput;
         }
-
-        // [Rpc(SendTo.Server)]
-        // public void SetVerticalInputRpc(float verticalInput)
-        // {
-        //     _verticalInput.Value = verticalInput;
-        // }
 
         [Rpc(SendTo.Server)]
         public void SetBrakingRpc(bool braking)
@@ -176,6 +187,7 @@ namespace rayzngames
                 .DOLocalRotate(GetPedalRotationBySpeed(), pedalInterval + .1f, RotateMode.LocalAxisAdd)
                 .SetEase(Ease.Linear);
         }
+
         private Vector3 GetPedalRotationBySpeed()
         {
             switch (currentSpeed)
@@ -197,6 +209,7 @@ namespace rayzngames
         {
             if (pedalIntervalTimer <= 0 && backWheel.motorTorque > 0)
             {
+                Debug.Log("Motor Force: 0f  set edildi" );
                 backWheel.motorTorque = 0f;
             }
             else if (pedalIntervalTimer > 0)
@@ -208,7 +221,7 @@ namespace rayzngames
         }
 
 
-        private void HandleEngine()
+        private void HandleBraking()
         {
             //TODO: Bunu geri kaldır eski sisteme dönmek için
             //backWheel.motorTorque = _braking.Value ? 0f : _verticalInput.Value * motorForce;
@@ -241,15 +254,18 @@ namespace rayzngames
 
         public void HandleSteering()
         {
+            var horizontalInput = NetworkManager.Singleton != null
+                ? _horizontalInput.Value
+                : _horizontalInputSingle;
             MaxSteeringReductor();
 
-            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * _horizontalInput.Value,
+            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * horizontalInput,
                 turnSmoothing * 0.1f);
             frontWheel.steerAngle = currentSteeringAngle;
 
             //We set the target lean angle to the + or - input value of our steering 
             //We invert our input for rotating in the ocrrect axis
-            targetLeanAngle = maxLeanAngle * -_horizontalInput.Value;
+            targetLeanAngle = maxLeanAngle * -horizontalInput;
         }
 
         public void UpdateHandles()

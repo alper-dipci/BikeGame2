@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 public class BicycleInputReader : NetworkBehaviour
 {
-    private BicycleVehicle _bicycleVehicle;
+    private BicycleVehicleNew _bicycleVehicleNew;
 
     private PlayerRole _myRole;
 
@@ -44,7 +44,7 @@ public class BicycleInputReader : NetworkBehaviour
             return;
         }
 
-        _bicycleVehicle = FindFirstObjectByType<BicycleVehicle>();
+        _bicycleVehicleNew = FindFirstObjectByType<BicycleVehicleNew>();
         Debug.Log("BicycleInputReader is enabled and listening to input.");
 
         _myRole = GetMyRoleFromSession();
@@ -58,7 +58,7 @@ public class BicycleInputReader : NetworkBehaviour
     {
         if (!_shouldListenToInput)
             Debug.Log("BicycleInputReader is not listening to input because the scene is not the game scene.");
-        if (!_bicycleVehicle)
+        if (!_bicycleVehicleNew)
             Debug.Log(
                 "BicycleVehicle is not found in the scene. Make sure it is present before enabling input reading.");
         if (!IsOwner)
@@ -67,7 +67,7 @@ public class BicycleInputReader : NetworkBehaviour
 
     private void Update()
     {
-        if (!IsOwner || !_shouldListenToInput || !_bicycleVehicle) return;
+        if (!IsOwner || !_shouldListenToInput || !_bicycleVehicleNew) return;
 
         float horizontal = 0f;
         bool braking = false;
@@ -77,10 +77,10 @@ public class BicycleInputReader : NetworkBehaviour
             case PlayerRole.Steer:
                 horizontal = Input.GetAxis("Horizontal");
                 if (horizontal != 0f)
-                    _bicycleVehicle.SetHorizontalInputRpc(horizontal);
+                    _bicycleVehicleNew.SetHorizontalInputRpc(horizontal);
                 
                 if (Input.GetKey(KeyCode.Space))
-                    _bicycleVehicle.PedalInstantRpc();
+                    _bicycleVehicleNew.PedalInstantRpc();
 
                 //TODO BURASI KALKICAK
 
@@ -95,11 +95,11 @@ public class BicycleInputReader : NetworkBehaviour
                 //     _bicycleVehicle.SetVerticalInputRpc(vertical);
                 //_bicycleVehicle.SetBrakingRpc(braking);
                 if (Input.GetKeyDown(KeyCode.Space))
-                    _bicycleVehicle.PedalInstantRpc();
+                    _bicycleVehicleNew.PedalInstantRpc();
 
                 horizontal = Input.GetAxis("Horizontal");
                 if (horizontal != 0f)
-                    _bicycleVehicle.SetHorizontalInputRpc(horizontal);
+                    _bicycleVehicleNew.SetHorizontalInputRpc(horizontal);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

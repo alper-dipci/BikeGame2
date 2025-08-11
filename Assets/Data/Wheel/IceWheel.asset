@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71021c5e2fd04c67aff5fa01ab1c78be, type: 3}
+  m_Name: IceWheel
+  m_EditorClassIdentifier: 
+  frontForward_extremumSlip: 0.3
+  frontForward_extremumValue: 0.5
+  frontForward_asymptoteSlip: 0.6
+  frontForward_asymptoteValue: 0.2
+  frontForward_stiffness: 0.4
+  frontSideways_extremumSlip: 0.25
+  frontSideways_extremumValue: 0.45
+  frontSideways_asymptoteSlip: 0.5
+  frontSideways_asymptoteValue: 0.2
+  frontSideways_stiffness: 0.1
+  backForward_extremumSlip: 0.35
+  backForward_extremumValue: 0.55
+  backForward_asymptoteSlip: 0.65
+  backForward_asymptoteValue: 0.25
+  backForward_stiffness: 0.45
+  backSideways_extremumSlip: 0.3
+  backSideways_extremumValue: 0.5
+  backSideways_asymptoteSlip: 0.55
+  backSideways_asymptoteValue: 0.22
+  backSideways_stiffness: 0.1
