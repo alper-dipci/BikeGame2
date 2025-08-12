@@ -39,6 +39,6 @@ public abstract class NetworkVehicleBase : NetworkBehaviour
 
     public void OnJumpColliderTriggered()
     {
-        rb.AddForce(Vector3.up * 5f, ForceMode.Impulse);
+        rb.AddForce(Vector3.up * 1000f, ForceMode.Impulse);
     }
 }
