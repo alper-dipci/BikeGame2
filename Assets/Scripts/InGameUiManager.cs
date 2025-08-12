@@ -10,7 +10,7 @@ namespace DefaultNamespace
     public class InGameUiManager : SingletonMonoBehaviour<InGameUiManager>
     {
         protected override bool _isPermanent => false;
-        [SerializeField] private BicycleVehicleNew bicycle;
+        [SerializeField] private BicycleVehicle bicycle;
         [SerializeField] private string speedPrefix = "Speed = ";
         [SerializeField] TextMeshProUGUI SpeedText;
         
@@ -23,9 +23,9 @@ namespace DefaultNamespace
         {
             Cursor.lockState = CursorLockMode.Locked;
             
-            if(!NetworkManager.Singleton.IsServer)
+            if(GameManager.Instance.IsMultiplayer && !NetworkManager.Singleton.IsServer)
                 return;
-            InputReader.Instance.OnEscapeButtonPressed += ToggleEscapeUi;
+            LocalInputReader.Instance.OnEscapeButtonPressed += ToggleEscapeUi;
             SetMotorTorkButton.onClick.AddListener(SetMotorTork);
             ResetToLastCheckPointButton.onClick.AddListener(ResetToLastCheckPoint);
         }

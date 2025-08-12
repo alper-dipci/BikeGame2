@@ -11,6 +11,9 @@ namespace DefaultNamespace
 
         private void Start()
         {
+            if(GameManager.Instance.IsSinglePlayer)
+                return;
+            
             steerText.gameObject.SetActive(false);
             wheeelText.gameObject.SetActive(false);
 

@@ -8,10 +8,8 @@ namespace DefaultNamespace
     {
         private void OnEnable()
         {
-            if (NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer)
-            {
+            if (GameManager.Instance.IsMultiplayer && !NetworkManager.Singleton.IsServer)
                 enabled = false;
-            }
         }
 
         private void OnTriggerEnter(Collider other)
@@ -27,7 +25,9 @@ namespace DefaultNamespace
                     Debug.Log("Dead zone triggered, resetting to last checkpoint.");
                     break;
                 case "JumpEffect":
-                    
+                    GameManager.Instance.CurrentVehicle.OnJumpColliderTriggered();
+                    Debug.Log("Jump effect triggered, applying jump force.");
+                    break;
                 default:
                     break;
             }

@@ -6,19 +6,14 @@ using System.Drawing;
 using DefaultNamespace;
 using DG.Tweening;
 using NaughtyAttributes;
+using Scriptables;
 using Unity.Netcode;
 
 namespace rayzngames
 {
-    public class BicycleVehicleNew : NetworkBehaviour
+    public class BicycleVehicle : NetworkVehicleBase
     {
-        //debugInfo	
-        public NetworkVariable<float> _horizontalInput = new NetworkVariable<float>(0f);
-
-        //NetworkVariable<float> _verticalInput = new NetworkVariable<float>(0f);
-        NetworkVariable<bool> _braking = new NetworkVariable<bool>(false);
-
-        [SerializeField] Rigidbody rb;
+        
 
         [Header("Power/Braking")] [Space(5)] [SerializeField]
         float motorForce;
@@ -91,12 +86,11 @@ namespace rayzngames
         private float pedalIntervalTimer;
         private Tweener pedalTween;
 
-        private float _horizontalInputSingle;
 
         // Start is called before the first frame update
         void Start()
         {
-            if (NetworkManager.Singleton != null && !IsServer)
+            if (GameManager.Instance.IsMultiplayer && !IsServer)
                 return;
             
             frontContact = frontTrail.transform.GetChild(0).GetComponent<ContactProvider>();
@@ -106,30 +100,13 @@ namespace rayzngames
             backWheel.ConfigureVehicleSubsteps(5, 12, 15);
 
             GameManager.Instance.OnPlayerFailed += ResetToLastCheckPoint;
+            LocalInputReader.Instance.OnResetButtonPressed += ResetToLastCheckPoint;
         }
 
         private void OnDisable()
         {
-            GameManager.Instance.OnPlayerFailed -= ResetToLastCheckPoint;
             if (pedalTween != null && pedalTween.IsActive())
-            {
                 pedalTween.Kill();
-            }
-        }
-
-        private void Update()
-        {
-            if (NetworkManager.Singleton != null)
-                return;
-            ListenInputForTest();
-        }
-
-        private void ListenInputForTest()
-        {
-            Debug.Log("Input Check");
-            _horizontalInputSingle = Input.GetAxis("Horizontal");
-            if (Input.GetKey(KeyCode.Space))
-                SetMotorTorque();
         }
 
         // Update is called once per frame
@@ -141,51 +118,42 @@ namespace rayzngames
             Speed_O_Meter();
             HandleSteering();
 
-            if (NetworkManager.Singleton != null && !IsServer)
+            if (GameManager.Instance.IsMultiplayer && !IsServer)
                 return;
 
             //HandleBraking();
-            HandleEngineNew();
+            HandleEngine();
             LeanOnTurn();
             //DebugInfo();
         }
-
-
-        [Rpc(SendTo.Server)]
-        public void SetHorizontalInputRpc(float horizontalInput)
-        {
-            _horizontalInput.Value = horizontalInput;
-        }
-
-        [Rpc(SendTo.Server)]
-        public void SetBrakingRpc(bool braking)
-        {
-            //TODO: Brekaing icin  
-            // _braking.Value = braking;
-        }
-
-        [Rpc(SendTo.Server)]
-        public void PedalInstantRpc()
-        {
-            SetMotorTorque();
-        }
-
-        private void SetMotorTorque()
+        private void HandleEngine()
         {
             if (pedalIntervalTimer > 0)
-                return;
+            {
+                pedalIntervalTimer -= Time.fixedDeltaTime;
+                
+            }
+            else
+            {
+                if (backWheel.motorTorque > 0 && !IsPedaling)
+                    backWheel.motorTorque = 0f;
+                
+                if (IsPedaling)
+                {
+                    backWheel.motorTorque = motorForceInstant;
+                    pedalIntervalTimer = pedalInterval;
+            
+                    //Dotween Animasyonu
+            
+                    if (pedalTween != null && pedalTween.IsActive())
+                        pedalTween.Kill();
 
-            Debug.Log("Motor Force set ediddi");
-            backWheel.motorTorque = motorForceInstant;
-            pedalIntervalTimer = pedalInterval; //Reset the interval
-            // Mevcut tween varsa durdur
-            if (pedalTween != null && pedalTween.IsActive())
-                pedalTween.Kill();
-
-            // Yeni tween başlat
-            pedalTween = pedalPivot
-                .DOLocalRotate(GetPedalRotationBySpeed(), pedalInterval + .1f, RotateMode.LocalAxisAdd)
-                .SetEase(Ease.Linear);
+                    pedalTween = pedalPivot
+                        .DOLocalRotate(GetPedalRotationBySpeed(), pedalInterval + .1f, RotateMode.LocalAxisAdd)
+                        .SetEase(Ease.Linear);
+                }
+            }
+           
         }
 
         private Vector3 GetPedalRotationBySpeed()
@@ -205,22 +173,6 @@ namespace rayzngames
             }
         }
 
-        private void HandleEngineNew()
-        {
-            if (pedalIntervalTimer <= 0 && backWheel.motorTorque > 0)
-            {
-                Debug.Log("Motor Force: 0f  set edildi" );
-                backWheel.motorTorque = 0f;
-            }
-            else if (pedalIntervalTimer > 0)
-            {
-                pedalIntervalTimer -= Time.fixedDeltaTime;
-            }
-
-            Debug.Log("Motor Force: " + backWheel.motorTorque);
-        }
-
-
         private void HandleBraking()
         {
             //TODO: Bunu geri kaldır eski sisteme dönmek için
@@ -228,7 +180,7 @@ namespace rayzngames
 
 
             //If we are braking, ApplyBreaking applies brakeForce conditional is embeded in parameter	
-            float force = _braking.Value ? brakeForce : 0f;
+            float force = IsBraking ? brakeForce : 0f;
             ApplyBraking(force);
         }
 
@@ -254,18 +206,15 @@ namespace rayzngames
 
         public void HandleSteering()
         {
-            var horizontalInput = NetworkManager.Singleton != null
-                ? _horizontalInput.Value
-                : _horizontalInputSingle;
             MaxSteeringReductor();
 
-            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * horizontalInput,
+            currentSteeringAngle = Mathf.Lerp(currentSteeringAngle, current_maxSteeringAngle * HorizontalInput,
                 turnSmoothing * 0.1f);
             frontWheel.steerAngle = currentSteeringAngle;
 
             //We set the target lean angle to the + or - input value of our steering 
             //We invert our input for rotating in the ocrrect axis
-            targetLeanAngle = maxLeanAngle * -horizontalInput;
+            targetLeanAngle = maxLeanAngle * -HorizontalInput;
         }
 
         public void UpdateHandles()
@@ -309,7 +258,7 @@ namespace rayzngames
 
         private void EmitTrail()
         {
-            if (_braking.Value)
+            if (IsBraking)
             {
                 frontTrail.emitting = frontContact.GetCOntact();
                 rearTrail.emitting = rearContact.GetCOntact();
@@ -366,6 +315,29 @@ namespace rayzngames
         public void SetInstantMotorForce(float force)
         {
             motorForceInstant = force;
+        }
+        [Button]
+        public void DefaultWheelFriction()
+        {
+            var defaultProfile = AssetManager.Instance.wheelDb.DefaultFrictionProfile;
+            UpdateWheelFrictions(defaultProfile);
+        }
+        [Button]
+        public void IceWheelFriction()
+        {
+            var iceProfile = AssetManager.Instance.wheelDb.IceFrictionProfile;
+            UpdateWheelFrictions(iceProfile);
+        }
+        private void UpdateWheelFrictions(WheelFrictionProfile profile)
+        {
+            var frontForwardFriction = profile.GetWheelFrictionCurve(WheelType.FrontForward);
+            var frontSidewaysFriction = profile.GetWheelFrictionCurve(WheelType.FrontSideways);
+            var backForwardFriction = profile.GetWheelFrictionCurve(WheelType.BackForward);
+            var backSidewaysFriction = profile.GetWheelFrictionCurve(WheelType.BackSideways);
+            frontWheel.sidewaysFriction = frontSidewaysFriction;
+            frontWheel.forwardFriction = frontForwardFriction;
+            backWheel.sidewaysFriction = backSidewaysFriction;
+            backWheel.forwardFriction = backForwardFriction;
         }
     }
 }

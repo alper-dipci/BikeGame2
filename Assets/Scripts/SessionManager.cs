@@ -18,6 +18,7 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
     private ISession _activeSession;
     public bool ServicesInitialized => UnityServices.State == ServicesInitializationState.Initialized;
     public event Action<ISession> OnSessionChanged;
+    public event Action<PlayerRole> OnLocalPlayerRoleChanged;
 
     public PlayerRole MyRole
     {
@@ -25,7 +26,7 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         {
             if (ActiveSession == null || ActiveSession.CurrentPlayer == null)
             {
-                return PlayerRole.None;
+                return PlayerRole.None; 
             }
 
             if (ActiveSession.CurrentPlayer.Properties.TryGetValue(MultiplayerKeys.PlayerRole, out var roleProp))
@@ -198,6 +199,7 @@ public class SessionManager : SingletonMonoBehaviour<SessionManager>
         {
             ActiveSession.CurrentPlayer.SetProperty(MultiplayerKeys.PlayerRole, new PlayerProperty(newRole.ToString()));
             await ActiveSession.SaveCurrentPlayerDataAsync();
+            OnLocalPlayerRoleChanged?.Invoke(newRole);
             Debug.Log($"Player role changed to: {newRole}");
         }
         catch (Exception e)
